@@ -1,0 +1,63 @@
+package com.banword;
+
+import org.ahocorasick.trie.PayloadEmit;
+import org.ahocorasick.trie.PayloadTrie;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+@Service
+public class BanwordService {
+    private final PayloadTrie<Banword> banwordTrie;
+    private final AllowWordTrie allowWordTrie;
+
+    public BanwordService() {
+        banwordTrie = PayloadTrie.<Banword>builder()
+                .addKeyword("졸라", new Banword("졸라"))
+                .addKeyword("직거래", new Banword("직거래"))
+                .addKeyword("쿠팡", new Banword("쿠팡"))
+                .build();
+
+        List<AllowWord> allowWords = new ArrayList<>();
+        allowWords.add(new AllowWord("고르곤졸라", 0, 0, 5));
+        allowWordTrie = new AllowWordTrie(allowWords);
+    }
+
+    public BanwordValidationResult validate(String originSentence) {
+        // Step 1: 우회 문자 분리
+        FilteredResult filteredResult = new BypassCharacterFilter().filterBypassCharacters(originSentence);
+
+        // Step 2: 금칙어 탐색
+        Collection<PayloadEmit<Banword>> foundKeywords = banwordTrie.parseText(filteredResult.getFilteredSentence());
+
+        // Step 3: 허용 단어 탐색
+        List<AllowWord> detectedAllowWords = allowWordTrie.searchAllowWords(filteredResult.getFilteredSentence());
+
+        // Step 4: 허용 단어에 포함되는 금칙어 제외
+        List<BanwordDetection> detectedBanwords = new ArrayList<>();
+        for (PayloadEmit<Banword> foundKeyword : foundKeywords) {
+            String keyword = foundKeyword.getKeyword();
+            int banwordStartPosition = foundKeyword.getStart();
+            int banwordEndPosition = foundKeyword.getEnd();
+
+            boolean isOverlapping = false;
+            for (AllowWord allowWord : detectedAllowWords) {
+                // 금칙어와 허용 단어의 위치가 겹치는지 확인
+                // 금칙어가 허용 단어의 범위 내에 포함되는 경우
+                if (allowWord.getStartPosition() <= banwordStartPosition && banwordEndPosition <= allowWord.getEndPosition()) {
+                    isOverlapping = true;
+                    break;
+                }
+            }
+
+            // 겹치지 않는 금칙어만 추가
+            if (!isOverlapping) {
+                detectedBanwords.add(new BanwordDetection(keyword, banwordStartPosition, banwordEndPosition, keyword.length()));
+            }
+        }
+
+        return new BanwordValidationResult(originSentence, detectedBanwords, filteredResult.getFilteredCharacters());
+    }
+}
