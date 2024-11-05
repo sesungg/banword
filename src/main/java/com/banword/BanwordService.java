@@ -16,6 +16,7 @@ public class BanwordService {
     public BanwordService() {
         banwordTrie = PayloadTrie.<Banword>builder()
                 .addKeyword("졸라", new Banword("졸라"))
+                .addKeyword("존나", new Banword("존나"))
                 .addKeyword("직거래", new Banword("직거래"))
                 .addKeyword("쿠팡", new Banword("쿠팡"))
                 .build();
@@ -58,7 +59,7 @@ public class BanwordService {
 
             // 겹치지 않는 금칙어만 추가
             if (!isOverlapping) {
-                String originalBanword = reconstructOriginalBanword(filteredResult, originalStart, originalEnd);
+                String originalBanword = reconstructOriginalBanword(originSentence, originalStart, originalEnd);
                 detectedBanwords.add(new BanwordDetection(originalBanword, originalStart, originalEnd, originalBanword.length()));
             }
         }
@@ -67,10 +68,10 @@ public class BanwordService {
     }
 
     // Helper 메서드 : 원본 금칙어 재조합
-    private String reconstructOriginalBanword(FilteredResult filteredResult, int start, int end) {
+    private String reconstructOriginalBanword(String originSentence, int start, int end) {
         StringBuilder originalBanword = new StringBuilder();
         for (int i = start; i <= end; i++) {
-            originalBanword.append(filteredResult.getOriginalCharacter(i));
+            originalBanword.append(originSentence.charAt(i));
         }
         return originalBanword.toString();
     }

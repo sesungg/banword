@@ -18,11 +18,12 @@ class BanwordServiceTest {
 
     @Test
     public void testContainsProhibitedWord() {
-        String testString = "여기 고르곤졸라가 졸111라 맛있어요.";
+        String testString = "여기 고르곤졸라가 졸111라 존4232 234나게 맛있어요.";
         BanwordValidationResult result = banwordService.validate(testString);
 
         System.out.println("result.getOriginalSentence() = " + result.getOriginalSentence());
         for (BanwordDetection detectedBanword : result.getDetectedBanwords()) {
+            System.out.println("=====================================================================");
             System.out.println("detectedBanword.getBanword() = " + detectedBanword.getBanword());
             System.out.println("detectedBanword.getStartPosition() = " + detectedBanword.getStartPosition());
             System.out.println("detectedBanword.getEndPosition() = " + detectedBanword.getEndPosition());

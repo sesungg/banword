@@ -18,6 +18,8 @@ public class BypassCharacterFilter {
         for (int i = 0; i < originSentence.length(); i++) {
             char c = originSentence.charAt(i);
 
+            if (Character.isWhitespace(c)) continue;
+
             if (isBypassCharacter(c)) {
                 // 우회 문자일 경우
                 filteredCharacters.add(new FilteredCharacter(String.valueOf(c), i));
