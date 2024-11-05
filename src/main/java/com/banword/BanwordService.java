@@ -1,29 +1,37 @@
 package com.banword;
 
 import org.ahocorasick.trie.PayloadEmit;
-import org.ahocorasick.trie.PayloadTrie;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Service
-public class BanwordService {
-    private final PayloadTrie<Banword> banwordTrie;
-    private final AllowWordTrie allowWordTrie;
+public class BanwordService<T, U> {
 
-    public BanwordService() {
-        banwordTrie = PayloadTrie.<Banword>builder()
-                .addKeyword("졸라", new Banword("졸라"))
-                .addKeyword("존나", new Banword("존나"))
-                .addKeyword("직거래", new Banword("직거래"))
-                .addKeyword("쿠팡", new Banword("쿠팡"))
-                .build();
+    private final GenericPayloadTrie<T> banwordTrie;
+    private final GenericPayloadTrie<U> allowWordTrie;
 
-        List<AllowWord> allowWords = new ArrayList<>();
-        allowWords.add(new AllowWord("고르곤졸라", 0, 0, 5));
-        allowWordTrie = new AllowWordTrie(allowWords);
+    public BanwordService(BanwordFilterProperties properties, BanwordLoader loader) throws Exception {
+        this(properties, loader, (Class<T>) Banword.class, (Class<U>) AllowWord.class);
+    }
+
+    public BanwordService(
+            BanwordFilterProperties properties,
+            BanwordLoader loader,
+            Class<T> banwordClass,
+            Class<U> allowwordClass) throws Exception {
+        List<T> banwords = loader.loadBanword(properties.getBanwordFilePath()).stream()
+                .map(keyword -> createInstance(banwordClass, keyword))
+                .collect(Collectors.toList());
+        List<U> allowwords = loader.loadBanword(properties.getAllowwordFilePath()).stream()
+                .map(keyword -> createInstance(allowwordClass, keyword))
+                .collect(Collectors.toList());
+
+        this.banwordTrie = new GenericPayloadTrie<>(banwords, banword -> banword);
+        this.allowWordTrie = new GenericPayloadTrie<>(allowwords, allowword -> allowword);
     }
 
     public BanwordValidationResult validate(String originSentence) {
@@ -31,15 +39,14 @@ public class BanwordService {
         FilteredResult filteredResult = new BypassCharacterFilter().filterBypassCharacters(originSentence);
 
         // Step 2: 금칙어 탐색
-        Collection<PayloadEmit<Banword>> foundKeywords = banwordTrie.parseText(filteredResult.getFilteredSentence());
+        Collection<PayloadEmit<T>> foundKeywords = banwordTrie.getTrie().parseText(filteredResult.getFilteredSentence());
 
         // Step 3: 허용 단어 탐색
-        List<AllowWord> detectedAllowWords = allowWordTrie.searchAllowWords(filteredResult.getFilteredSentence());
+        Collection<PayloadEmit<U>> detectedAllowWords = allowWordTrie.getTrie().parseText(filteredResult.getFilteredSentence());
 
         // Step 4: 허용 단어에 포함되는 금칙어 제외
         List<BanwordDetection> detectedBanwords = new ArrayList<>();
-        for (PayloadEmit<Banword> foundKeyword : foundKeywords) {
-            String keyword = foundKeyword.getKeyword();
+        for (PayloadEmit<T> foundKeyword : foundKeywords) {
             int filteredStart = foundKeyword.getStart();
             int filteredEnd = foundKeyword.getEnd();
 
@@ -48,10 +55,10 @@ public class BanwordService {
             int originalEnd = filteredResult.mapToOriginalPosition(filteredEnd);
 
             boolean isOverlapping = false;
-            for (AllowWord allowWord : detectedAllowWords) {
+            for (PayloadEmit<U> allowWord : detectedAllowWords) {
                 // 금칙어와 허용 단어의 위치가 겹치는지 확인
                 // 금칙어가 허용 단어의 범위 내에 포함되는 경우
-                if (allowWord.getStartPosition() <= filteredStart && filteredEnd <= allowWord.getEndPosition()) {
+                if (allowWord.getStart() <= filteredStart && filteredEnd <= allowWord.getEnd()) {
                     isOverlapping = true;
                     break;
                 }
@@ -68,11 +75,22 @@ public class BanwordService {
     }
 
     // Helper 메서드 : 원본 금칙어 재조합
+
     private String reconstructOriginalBanword(String originSentence, int start, int end) {
         StringBuilder originalBanword = new StringBuilder();
         for (int i = start; i <= end; i++) {
             originalBanword.append(originSentence.charAt(i));
         }
         return originalBanword.toString();
+    }
+
+    //리플렉션을 사용하여 인스턴스 생성하는 헬퍼 메서드
+    private <V> V createInstance(Class<V> clazz, String keyword) {
+        try {
+            Constructor<V> constructor = clazz.getConstructor(String.class);
+            return constructor.newInstance(keyword);
+        } catch (Exception e) {
+            throw new RuntimeException("Filed to create instance of " + clazz.getName(), e);
+        }
     }
 }
