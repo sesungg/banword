@@ -18,7 +18,7 @@ class BanwordServiceTest {
 
     @Test
     public void testContainsProhibitedWord() {
-        String testString = "여기 고르곤졸라가 졸1라 맛있어요.";
+        String testString = "여기 고르곤졸라가 졸111라 맛있어요.";
         BanwordValidationResult result = banwordService.validate(testString);
 
         System.out.println("result.getOriginalSentence() = " + result.getOriginalSentence());

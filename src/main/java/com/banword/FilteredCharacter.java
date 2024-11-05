@@ -1,7 +1,5 @@
 package com.banword;
 
-import lombok.Getter;
-
 public class FilteredCharacter {
     private final String character;
     private final int position;

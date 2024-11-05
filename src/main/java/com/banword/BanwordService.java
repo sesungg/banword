@@ -39,14 +39,18 @@ public class BanwordService {
         List<BanwordDetection> detectedBanwords = new ArrayList<>();
         for (PayloadEmit<Banword> foundKeyword : foundKeywords) {
             String keyword = foundKeyword.getKeyword();
-            int banwordStartPosition = foundKeyword.getStart();
-            int banwordEndPosition = foundKeyword.getEnd();
+            int filteredStart = foundKeyword.getStart();
+            int filteredEnd = foundKeyword.getEnd();
+
+            // 원본 문장 위치로 변환
+            int originalStart = filteredResult.mapToOriginalPosition(filteredStart);
+            int originalEnd = filteredResult.mapToOriginalPosition(filteredEnd);
 
             boolean isOverlapping = false;
             for (AllowWord allowWord : detectedAllowWords) {
                 // 금칙어와 허용 단어의 위치가 겹치는지 확인
                 // 금칙어가 허용 단어의 범위 내에 포함되는 경우
-                if (allowWord.getStartPosition() <= banwordStartPosition && banwordEndPosition <= allowWord.getEndPosition()) {
+                if (allowWord.getStartPosition() <= filteredStart && filteredEnd <= allowWord.getEndPosition()) {
                     isOverlapping = true;
                     break;
                 }
@@ -54,10 +58,20 @@ public class BanwordService {
 
             // 겹치지 않는 금칙어만 추가
             if (!isOverlapping) {
-                detectedBanwords.add(new BanwordDetection(keyword, banwordStartPosition, banwordEndPosition, keyword.length()));
+                String originalBanword = reconstructOriginalBanword(filteredResult, originalStart, originalEnd);
+                detectedBanwords.add(new BanwordDetection(originalBanword, originalStart, originalEnd, originalBanword.length()));
             }
         }
 
         return new BanwordValidationResult(originSentence, detectedBanwords, filteredResult.getFilteredCharacters());
+    }
+
+    // Helper 메서드 : 원본 금칙어 재조합
+    private String reconstructOriginalBanword(FilteredResult filteredResult, int start, int end) {
+        StringBuilder originalBanword = new StringBuilder();
+        for (int i = start; i <= end; i++) {
+            originalBanword.append(filteredResult.getOriginalCharacter(i));
+        }
+        return originalBanword.toString();
     }
 }
