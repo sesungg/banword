@@ -1,7 +1,5 @@
 package com.banword;
 
-import lombok.Getter;
-
 public class BanwordDetection {
     private final String banword;
     private final int startPosition;

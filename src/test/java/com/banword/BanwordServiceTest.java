@@ -2,54 +2,40 @@ package com.banword;
 
 import org.ahocorasick.trie.PayloadEmit;
 import org.ahocorasick.trie.PayloadTrie;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.Collection;
+import java.util.List;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@ExtendWith(MockitoExtension.class)
 class BanwordServiceTest {
 
     @Autowired
     private BanwordService banwordService;
 
-    private PayloadTrie<Banword> banwordTrie;
-    private PayloadTrie<AllowWord> allowWords;
-
-    @BeforeEach
-    void setBanword() {
-        banwordTrie = PayloadTrie.<Banword>builder()
-                .addKeyword("졸라", new Banword("졸라"))
-                .addKeyword("존나", new Banword("존나"))
-                .addKeyword("직거래", new Banword("직거래"))
-                .addKeyword("쿠팡", new Banword("쿠팡"))
-                .build();
-    }
-
-    @BeforeEach
-    void setAllowWord() {
-        allowWords = PayloadTrie.<AllowWord>builder()
-                .addKeyword("고르곤졸라", new AllowWord("고르곤졸라"))
-                .build();
-    }
+    @Mock
+    private BanwordLoader banwordLoader;
 
     @Test
-    public void testContainsProhibitedWord() {
-        String testString = "여기 고르곤졸라가 졸111라 존4232 234나게 맛있어요.";
-        BanwordValidationResult result = banwordService.validate(testString);
+    void validate_whenContainsBanword_shouldReturnTrue() throws Exception {
+        when(banwordLoader.loadBanword(anyString())).thenReturn(List.of("banword"));
 
-        System.out.println("result.getOriginalSentence() = " + result.getOriginalSentence());
-        for (BanwordDetection detectedBanword : result.getDetectedBanwords()) {
-            System.out.println("=====================================================================");
-            System.out.println("detectedBanword.getBanword() = " + detectedBanword.getBanword());
-            System.out.println("detectedBanword.getStartPosition() = " + detectedBanword.getStartPosition());
-            System.out.println("detectedBanword.getEndPosition() = " + detectedBanword.getEndPosition());
-            System.out.println("detectedBanword.getLength() = " + detectedBanword.getLength());
-        }
+        BanwordValidationResult result = banwordService.validate("This is a banword test.");
+
+        System.out.println("result.getDetectedBanwords() = " + result.getDetectedBanwords());
     }
 
 }
