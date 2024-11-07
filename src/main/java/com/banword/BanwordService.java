@@ -23,12 +23,16 @@ public class BanwordService<T, U> {
     private final Class<U> allowwordClass;
     private final BanwordFilterProperties properties;
 
+    public BanwordService() throws Exception {
+        new BanwordService<T, U>(null, null, null);
+    }
+
     @Autowired
     public BanwordService(BanwordFilterProperties properties, BanwordLoader loader,
-                          Class<T> banwordClass, Class<U> allowwordClass) throws Exception {
+                          BanwordConfigurer configurer) throws Exception {
         this.loader = loader;
-        this.banwordClass = banwordClass;
-        this.allowwordClass = allowwordClass;
+        this.banwordClass = (Class<T>) configurer.getBanwordClass();
+        this.allowwordClass = (Class<U>) configurer.getAllowwordClass();
         this.properties = properties;
 
         // 파일이 제공되는 경우 초기 Trie 필드
@@ -50,7 +54,6 @@ public class BanwordService<T, U> {
 
     // 엔티티가 변경될 때 Trie 갱신
     // 수동으로 갱신하는 메서드
-
     public void refreshBanwordTrie() throws Exception {
         if (properties != null && loader != null) {
             this.banwordTrie = buildBanwordTrieFromFile(properties);
