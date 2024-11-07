@@ -2,7 +2,8 @@ package com.banword;
 
 public class BanwordConfigFactory {
 
-    private String location;
+    private String banwordLocation;
+    private String allowwordLocation;
 
     private Class<?> banwordClass;
 
@@ -12,8 +13,12 @@ public class BanwordConfigFactory {
 
     private String refreshIntervalCron;
 
-    public void setLocation(String location) {
-        this.location = location;
+    public void setBanwordLocation(String banwordLocation) {
+        this.banwordLocation = banwordLocation;
+    }
+
+    public void setAllowwordLocation(String allowwordLocation) {
+        this.allowwordLocation = allowwordLocation;
     }
 
     public void setBanwordClass(Class<?> banwordClass) {
@@ -28,12 +33,18 @@ public class BanwordConfigFactory {
         this.refreshInterval = refreshInterval;
     }
 
+    public void setRefreshIntervalCron(String refreshIntervalCron) {
+        this.refreshIntervalCron = refreshIntervalCron;
+    }
+
     public BanwordConfigElement createBanwordConfig() {
-        String fileLocation;
-        Class<?> banwordClass;
-
-        if (this.location == null || this.location.isEmpty() || this.location == "") {
-
-        }
+        return new BanwordConfigElement(
+                this.banwordLocation,
+                this.allowwordLocation,
+                this.banwordClass,
+                this.allowwordClass,
+                this.refreshInterval,
+                this.refreshIntervalCron
+        );
     }
 }

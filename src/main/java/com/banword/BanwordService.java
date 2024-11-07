@@ -18,31 +18,29 @@ public class BanwordService<T, U> {
 
     private PayloadTrie<T> banwordTrie;
     private PayloadTrie<U> allowWordTrie;
-    private final BanwordLoader loader;
-    private final Class<T> banwordClass;
-    private final Class<U> allowwordClass;
-    private final BanwordFilterProperties properties;
-
-    public BanwordService() throws Exception {
-        new BanwordService<T, U>(null, null, null);
-    }
 
     @Autowired
-    public BanwordService(BanwordFilterProperties properties, BanwordLoader loader,
-                          BanwordConfigurer configurer) throws Exception {
-        this.loader = loader;
-        this.banwordClass = (Class<T>) configurer.getBanwordClass();
-        this.allowwordClass = (Class<U>) configurer.getAllowwordClass();
-        this.properties = properties;
+    public BanwordService(BanwordConfigElement config, BanwordLoader loader) throws Exception {
+        String banwordLocation = config.getBanwordLocation();
+        String allowwordLocation = config.getAllowwordLocation();
+        Class<T> banwordClass = (Class<T>) config.getBanwordClass();
+        Class<U> allowwordClass = (Class<U>) config.getAllowwordClass();
 
-        // 파일이 제공되는 경우 초기 Trie 필드
-        if (properties != null && loader != null) {
-            this.banwordTrie = buildBanwordTrieFromFile(properties);
-            this.allowWordTrie = buildAllowWordTrieFromFile(properties);
-        } else {
-            this.banwordTrie = PayloadTrie.<T>builder().build();
-            this.allowWordTrie = PayloadTrie.<U>builder().build();
+        if (banwordLocation != null) {
+            this.banwordTrie = buildTrie(banwordLocation, loader, banwordClass);
+            this.allowWordTrie = buildTrie(allowwordLocation, loader, allowwordClass);
         }
+    }
+
+    private <V> PayloadTrie<V> buildTrie(String filePath, BanwordLoader loader, Class<V> clazz) throws Exception {
+        List<V> words = loader.loadBanword(filePath).stream()
+                .map(word -> createInstance(clazz, word))
+                .collect(Collectors.toList());
+
+        PayloadTrie.PayloadTrieBuilder<V> trieBuilder = PayloadTrie.<V>builder();
+        words.forEach(word -> trieBuilder.addKeyword(word.toString(), word));
+
+        return trieBuilder.build();
     }
 
     // 주기적 갱신
