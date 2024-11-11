@@ -1,7 +1,5 @@
 package com.banword;
 
-import org.ahocorasick.trie.PayloadEmit;
-import org.ahocorasick.trie.PayloadTrie;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +9,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-import java.util.Collection;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
@@ -24,7 +21,7 @@ import static org.mockito.Mockito.when;
 class BanwordServiceTest {
 
     @Autowired
-    private BanwordService banwordService;
+    private BanwordValidator banwordValidator;
 
     @Mock
     private BanwordLoader banwordLoader;
@@ -33,7 +30,7 @@ class BanwordServiceTest {
     void validate_whenContainsBanword_shouldReturnTrue() throws Exception {
         when(banwordLoader.loadBanword(anyString())).thenReturn(List.of("banword"));
 
-        BanwordValidationResult result = banwordService.validate("This is a banword test.");
+        BanwordValidationResult result = banwordValidator.validate("This is a banword test.");
 
         System.out.println("result.getDetectedBanwords() = " + result.getDetectedBanwords());
     }

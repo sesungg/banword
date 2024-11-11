@@ -1,13 +1,17 @@
 package com.banword;
 
 public class BanwordConfigElement {
+    private final BanwordFilterProperties properties;
+    private String banwordLocation;
+    private String allowwordLocation;
+    private Class<?> banwordClass;
+    private Class<?> allowwordClass;
+    private long refreshInterval;
+    private String refreshIntervalCron;
 
-    private final String banwordLocation;
-    private final String allowwordLocation;
-    private final Class<?> banwordClass;
-    private final Class<?> allowwordClass;
-    private final long refreshInterval;
-    private final String refreshIntervalCron;
+    public BanwordConfigElement(BanwordFilterProperties properties) {
+        this.properties = properties;
+    }
 
     public BanwordConfigElement(String banwordLocation, String allowwordLocation, Class<?> banwordClass, Class<?> allowwordClass, long refreshInterval, String refreshIntervalCron) {
         if (banwordLocation != null) {

@@ -13,20 +13,24 @@ public class BanwordConfigFactory {
 
     private String refreshIntervalCron;
 
-    public void setBanwordLocation(String banwordLocation) {
+    public BanwordConfigFactory setBanwordLocation(String banwordLocation) {
         this.banwordLocation = banwordLocation;
+        return this;
     }
 
-    public void setAllowwordLocation(String allowwordLocation) {
+    public BanwordConfigFactory setAllowwordLocation(String allowwordLocation) {
         this.allowwordLocation = allowwordLocation;
+        return this;
     }
 
-    public void setBanwordClass(Class<?> banwordClass) {
+    public BanwordConfigFactory setBanwordClass(Class<?> banwordClass) {
         this.banwordClass = banwordClass;
+        return this;
     }
 
-    public void setAllowwordClass(Class<?> allowwordClass) {
+    public BanwordConfigFactory setAllowwordClass(Class<?> allowwordClass) {
         this.allowwordClass = allowwordClass;
+        return this;
     }
 
     public void setRefreshInterval(long refreshInterval) {
@@ -38,6 +42,7 @@ public class BanwordConfigFactory {
     }
 
     public BanwordConfigElement createBanwordConfig() {
+        validateRequiredFields();
         return new BanwordConfigElement(
                 this.banwordLocation,
                 this.allowwordLocation,
@@ -46,5 +51,13 @@ public class BanwordConfigFactory {
                 this.refreshInterval,
                 this.refreshIntervalCron
         );
+    }
+
+    private void validateRequiredFields() {
+        if (banwordLocation == null || allowwordLocation == null ||
+                banwordLocation.equals("") || allowwordLocation.equals("") ||
+                banwordClass == null || allowwordClass == null) {
+            throw new IllegalArgumentException("bawordLocation, allowwordLocation, banwordClass, allowwordClass are required fields.");
+        }
     }
 }
