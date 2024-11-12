@@ -5,34 +5,33 @@ import java.util.List;
 
 public class BypassCharacterFilter {
 
-    private static final String BYPASS_CHARACTER_PATTERN = "[^a-zA-Z가-힣\\s]";
-
     public FilteredResult filterBypassCharacters(String originSentence) {
-        StringBuilder filteredSentence = new StringBuilder();
+        StringBuilder filteredSentence = new StringBuilder(originSentence.length());
         List<FilteredCharacter> filteredCharacters = new ArrayList<>();
         int[] originalToFilteredMap = new int[originSentence.length()];
-        List<Integer> filteredToOriginalList = new ArrayList<>();
+        int[] filteredToOriginalMap = new int[originSentence.length()];
 
         int filteredPosition = 0;
+        int filteredIndex = 0;
 
         for (int i = 0; i < originSentence.length(); i++) {
             char c = originSentence.charAt(i);
 
-            if (Character.isWhitespace(c)) continue;
-
+            // 우회 문자 필터링 및 맵핑
             if (isBypassCharacter(c)) {
-                // 우회 문자일 경우
                 filteredCharacters.add(new FilteredCharacter(String.valueOf(c), i));
-                originalToFilteredMap[i] = -1;
+                originalToFilteredMap[i] = -1; // 우회 문자는 -1로 매핑
             } else {
-                // 필터링된 문자일 경우
+                // 필터링된 문자를 추가하고 매핑 배열 업데이트
                 filteredSentence.append(c);
-                filteredToOriginalList.add(i);
                 originalToFilteredMap[i] = filteredPosition;
+                filteredToOriginalMap[filteredIndex++] = i;
                 filteredPosition++;
             }
         }
-        int[] filteredToOriginalMap = filteredToOriginalList.stream().mapToInt(Integer::intValue).toArray();
+
+        int[] finalFilteredToOriginalMap = new int[filteredIndex];
+        System.arraycopy(filteredToOriginalMap, 0, finalFilteredToOriginalMap, 0, filteredIndex);
 
         // FilteredResult 객체 생성
         return new FilteredResult(
@@ -40,17 +39,13 @@ public class BypassCharacterFilter {
                 originSentence,
                 filteredCharacters,
                 originalToFilteredMap,
-                filteredToOriginalMap
+                finalFilteredToOriginalMap
         );
     }
 
+    // 알파벳, 한글, 숫자 이외의 문자를 우회 문자로 간주
     private boolean isBypassCharacter(char c) {
-        // 숫자이거나 한글/알파벳이 아닌 문자만 우회 문자로 간주
-        return Character.isDigit(c) || !(Character.isLetter(c) || isKoreanCharacter(c));
-    }
-
-    private boolean isKoreanCharacter(char c) {
-        // 한글 유니코드 범위를 통해 한글 문자인지 확인
-        return (c >= '가' && c <= '힣');
+        return !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+                (c >= '가' && c <= '힣') || Character.isWhitespace(c));
     }
 }
