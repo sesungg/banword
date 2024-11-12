@@ -3,22 +3,22 @@ package com.banword;
 import org.ahocorasick.trie.PayloadEmit;
 import org.ahocorasick.trie.PayloadTrie;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
+@Component
 public class BanwordValidator<T, U> {
 
     private PayloadTrie<T> banwordTrie;
     private PayloadTrie<U> allowWordTrie;
     private Class<T> banwordClass;
     private Class<U> allowwordClass;
-    private BanwordLoader loader;
-    private BanwordConfigElement config;
+    private final BanwordLoader loader;
+    private final BanwordConfigElement config;
 
     @Autowired
     public BanwordValidator(@Autowired(required = false) BanwordConfigElement config, BanwordLoader loader) throws Exception {
@@ -29,23 +29,25 @@ public class BanwordValidator<T, U> {
     }
 
     private void initTries() throws Exception {
-        this.banwordClass = (Class<T>) config.getBanwordClass();
-        this.allowwordClass = (Class<U>) config.getAllowwordClass();
-        String banwordLocation = config.getBanwordLocation();
-        String allowwordLocation = config.getAllowwordLocation();
+        if (config != null) {
+            this.banwordClass = (Class<T>) config.getBanwordClass();
+            this.allowwordClass = (Class<U>) config.getAllowwordClass();
+            String banwordLocation = config.getBanwordLocation();
+            String allowwordLocation = config.getAllowwordLocation();
 
-        if (banwordLocation != null) {
-            List<T> banwords = loader.loadBanword(banwordLocation).stream()
-                    .map(word -> TrieBuilder.instantiateFromKeyword(banwordClass, word))
-                    .collect(Collectors.toList());
-            this.banwordTrie = TrieBuilder.buildTrie(banwords);
-        }
+            if (banwordLocation != null) {
+                List<T> banwords = loader.loadBanword(banwordLocation).stream()
+                        .map(word -> TrieBuilder.instantiateFromKeyword(banwordClass, word))
+                        .collect(Collectors.toList());
+                this.banwordTrie = TrieBuilder.buildTrie(banwords);
+            }
 
-        if (allowwordLocation != null) {
-            List<U> allowWords = loader.loadBanword(allowwordLocation).stream()
-                    .map(word -> TrieBuilder.instantiateFromKeyword(allowwordClass, word))
-                    .collect(Collectors.toList());
-            this.allowWordTrie = TrieBuilder.buildTrie(allowWords);
+            if (allowwordLocation != null) {
+                List<U> allowWords = loader.loadBanword(allowwordLocation).stream()
+                        .map(word -> TrieBuilder.instantiateFromKeyword(allowwordClass, word))
+                        .collect(Collectors.toList());
+                this.allowWordTrie = TrieBuilder.buildTrie(allowWords);
+            }
         }
     }
 
@@ -104,7 +106,7 @@ public class BanwordValidator<T, U> {
             }
         }
 
-        return new BanwordValidationResult(originSentence, detectedBanwords, filteredResult.getFilteredCharacters());
+        return new BanwordValidationResult(originSentence, detectedBanwords);
     }
 
     // Helper 메서드 : 원본 금칙어 재조합
