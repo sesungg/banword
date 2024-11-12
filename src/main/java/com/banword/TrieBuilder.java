@@ -9,7 +9,7 @@ import java.util.List;
 
 public class TrieBuilder {
 
-    public static <V> PayloadTrie<V> buildTrie(List<V> words, Class<V> clazz) {
+    public static <V> PayloadTrie<V> buildTrie(List<V> words) {
         PayloadTrie.PayloadTrieBuilder<V> trieBuilder = PayloadTrie.<V>builder();
         words.forEach(word -> trieBuilder.addKeyword(word.toString(), word));
         return trieBuilder.build();

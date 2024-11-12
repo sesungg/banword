@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class BanwordValidator<T, U> {
@@ -18,10 +19,9 @@ public class BanwordValidator<T, U> {
     private Class<U> allowwordClass;
     private BanwordLoader loader;
     private BanwordConfigElement config;
-    private BanwordFilterProperties properties;
 
     @Autowired
-    public BanwordValidator(@Autowired(required = false) BanwordConfigElement config, BanwordLoader loader, BanwordFilterProperties properties) throws Exception {
+    public BanwordValidator(@Autowired(required = false) BanwordConfigElement config, BanwordLoader loader) throws Exception {
         this.loader = loader;
         this.config = config;
 
@@ -35,30 +35,35 @@ public class BanwordValidator<T, U> {
         String allowwordLocation = config.getAllowwordLocation();
 
         if (banwordLocation != null) {
-            List<T> banwords = (List<T>) loader.loadBanword(banwordLocation);
-            this.banwordTrie = TrieBuilder.buildTrie(banwords, banwordClass);
+            List<T> banwords = loader.loadBanword(banwordLocation).stream()
+                    .map(word -> TrieBuilder.instantiateFromKeyword(banwordClass, word))
+                    .collect(Collectors.toList());
+            this.banwordTrie = TrieBuilder.buildTrie(banwords);
         }
+
         if (allowwordLocation != null) {
-            List<U> allowWords = (List<U>) loader.loadBanword(allowwordLocation);
-            this.allowWordTrie = TrieBuilder.buildTrie(allowWords, allowwordClass);
+            List<U> allowWords = loader.loadBanword(allowwordLocation).stream()
+                    .map(word -> TrieBuilder.instantiateFromKeyword(allowwordClass, word))
+                    .collect(Collectors.toList());
+            this.allowWordTrie = TrieBuilder.buildTrie(allowWords);
         }
     }
 
     public void addBanword(List<T> words) {
-        this.banwordTrie = TrieBuilder.buildTrie(words, banwordClass);
+        this.banwordTrie = TrieBuilder.buildBanwordTrie(words, banwordClass);
     }
 
     // 금칙어 리스트를 추가하는 메서드
     public void addBanword(List<T> words, Class<T> clazz) {
-        this.banwordTrie = TrieBuilder.buildTrie(words, clazz);
+        this.banwordTrie = TrieBuilder.buildBanwordTrie(words, clazz);
     }
 
     public void addAllowWord(List<U> words) {
-        this.allowWordTrie = TrieBuilder.buildTrie(words, allowwordClass);
+        this.allowWordTrie = TrieBuilder.buildAllowWordTrie(words, allowwordClass);
     }
 
     public void addAllowWord(List<U> words, Class<U> clazz) {
-        this.allowWordTrie = TrieBuilder.buildTrie(words, clazz);
+        this.allowWordTrie = TrieBuilder.buildAllowWordTrie(words, clazz);
     }
 
     // 검증 로직
