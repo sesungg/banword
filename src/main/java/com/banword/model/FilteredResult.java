@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.model;
 
 import java.util.List;
 

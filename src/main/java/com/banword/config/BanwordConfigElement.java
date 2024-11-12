@@ -1,4 +1,7 @@
-package com.banword;
+package com.banword.config;
+
+import com.banword.model.AllowWord;
+import com.banword.model.Banword;
 
 public class BanwordConfigElement {
     private final String banwordLocation;

@@ -1,4 +1,7 @@
-package com.banword;
+package com.banword.core;
+
+import com.banword.model.FilteredCharacter;
+import com.banword.model.FilteredResult;
 
 import java.util.ArrayList;
 import java.util.List;

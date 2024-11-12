@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.model;
 
 public class FilteredCharacter {
     private final String character;

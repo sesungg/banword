@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.core;
 
 import com.banword.annotation.AllowWordField;
 import com.banword.annotation.BanwordField;

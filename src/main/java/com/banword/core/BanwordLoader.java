@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.core;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;

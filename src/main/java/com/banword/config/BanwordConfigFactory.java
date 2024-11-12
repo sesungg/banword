@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.config;
 
 public class BanwordConfigFactory {
 

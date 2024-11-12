@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.model;
 
 public class Banword {
     private final String word;

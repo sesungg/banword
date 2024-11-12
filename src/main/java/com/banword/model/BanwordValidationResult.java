@@ -1,4 +1,6 @@
-package com.banword;
+package com.banword.model;
+
+import com.banword.core.BanwordDetection;
 
 import java.util.List;
 

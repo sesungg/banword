@@ -1,4 +1,4 @@
-package com.banword;
+package com.banword.core;
 
 public class BanwordDetection {
     private final String banword;

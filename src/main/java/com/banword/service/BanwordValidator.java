@@ -1,5 +1,12 @@
-package com.banword;
+package com.banword.service;
 
+import com.banword.config.BanwordConfigElement;
+import com.banword.core.BanwordDetection;
+import com.banword.core.BanwordLoader;
+import com.banword.core.BypassCharacterFilter;
+import com.banword.core.TrieBuilder;
+import com.banword.model.BanwordValidationResult;
+import com.banword.model.FilteredResult;
 import org.ahocorasick.trie.PayloadEmit;
 import org.ahocorasick.trie.PayloadTrie;
 import org.springframework.beans.factory.annotation.Autowired;
