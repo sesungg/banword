@@ -1,17 +1,13 @@
 package com.banword;
 
-import com.banword.annotation.AllowWordField;
-import com.banword.annotation.BanwordField;
 import org.ahocorasick.trie.PayloadEmit;
 import org.ahocorasick.trie.PayloadTrie;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class BanwordValidator<T, U> {
@@ -48,90 +44,21 @@ public class BanwordValidator<T, U> {
         }
     }
 
-    // 동적으로 금칙어 추가
-    public void addBanwords(List<String> words) {
-        if (banwordClass == null) this.banwordClass = (Class<T>) Banword.class;
-        List<T> banwords = words.stream()
-                .map(word -> TrieBuilder.createInstance(banwordClass, word))
-                .collect(Collectors.toList());
-        this.banwordTrie = TrieBuilder.buildTrie(banwords, banwordClass);
+    public void addBanword(List<T> words) {
+        this.banwordTrie = TrieBuilder.buildTrie(words, banwordClass);
     }
 
-    // 금칙어 추가 및 클래스 변경
-    public void addBanwords(List<T> words, Class<T> clazz) {
-        // banwordClass 필드 설정
-        this.banwordClass = clazz;
-
-        // Trie 빌더 설정
-        PayloadTrie.PayloadTrieBuilder<T> banwordTrieBuilder = PayloadTrie.<T>builder();
-
-        // 리플랙션으로 banword 필드 추출
-        Field banwordField = null;
-
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(BanwordField.class)) {
-                banwordField = field;
-                banwordField.setAccessible(true);
-                break;
-            }
-        }
-
-        if (banwordField == null) {
-            throw new IllegalArgumentException("금칙어 필드가 설정되지 않았습니다. @BanwordField 어노테이션을 추가해 주세요.");
-        }
-
-        // 각 객체의 banword 필드를 키로 추가
-        for (T word : words) {
-            try {
-                String keyword = (String) banwordField.get(word);
-                banwordTrieBuilder.addKeyword(keyword, word);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("금칙어 필드 접근 실패 : " + clazz.getName(), e);
-            }
-        }
-
-        this.banwordTrie = banwordTrieBuilder.build();
+    // 금칙어 리스트를 추가하는 메서드
+    public void addBanword(List<T> words, Class<T> clazz) {
+        this.banwordTrie = TrieBuilder.buildTrie(words, clazz);
     }
 
-    // 동적으로 허용 단어 추가
-    public void addAllowWords(List<String> words) {
-        if (allowwordClass == null) this.allowwordClass = (Class<U>) AllowWord.class;
-        List<U> allowwords = words.stream()
-                .map(word -> TrieBuilder.createInstance(allowwordClass, word))
-                .collect(Collectors.toList());
-        this.allowWordTrie = TrieBuilder.buildTrie(allowwords, allowwordClass);
+    public void addAllowWord(List<U> words) {
+        this.allowWordTrie = TrieBuilder.buildTrie(words, allowwordClass);
     }
 
-    // 허용 단어 추가 및 클래스 변경
-    public void addAllowWords(List<U> words, Class<U> clazz) {
-        this.allowwordClass = clazz;
-
-        PayloadTrie.PayloadTrieBuilder<U> allowWordTrieBuilder = PayloadTrie.<U>builder();
-
-        Field allowWordField = null;
-
-        for (Field field : clazz.getDeclaredFields()) {
-            if (field.isAnnotationPresent(AllowWordField.class)) {
-                allowWordField = field;
-                allowWordField.setAccessible(true);
-                break;
-            }
-        }
-
-        if (allowWordField == null) {
-            throw new IllegalArgumentException("금칙어 필드가 설정되지 않았습니다. @AllowWordField 어노테이션를 추가해 주세요.");
-        }
-
-        for (U word : words) {
-            try {
-                String keyword = (String) allowWordField.get(word);
-                allowWordTrieBuilder.addKeyword(keyword, word);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("금칙어 필드 접근 실패: " + clazz.getName(), e);
-            }
-        }
-
-        this.allowWordTrie = allowWordTrieBuilder.build();
+    public void addAllowWord(List<U> words, Class<U> clazz) {
+        this.allowWordTrie = TrieBuilder.buildTrie(words, clazz);
     }
 
     // 검증 로직
