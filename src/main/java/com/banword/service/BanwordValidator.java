@@ -1,94 +1,55 @@
 package com.banword.service;
 
-import com.banword.config.BanwordConfigElement;
 import com.banword.core.BanwordDetection;
-import com.banword.core.BanwordLoader;
 import com.banword.core.BypassCharacterFilter;
 import com.banword.core.TrieBuilder;
+import com.banword.enums.BanwordFilterPolicy;
+import com.banword.model.Allowword;
+import com.banword.model.Banword;
 import com.banword.model.BanwordValidationResult;
 import com.banword.model.FilteredResult;
+import com.banword.provider.AllowwordProvider;
+import com.banword.provider.BanwordProvider;
 import org.ahocorasick.trie.PayloadEmit;
 import org.ahocorasick.trie.PayloadTrie;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 @Component
-public class BanwordValidator<T, U> {
+public class BanwordValidator {
 
-    private PayloadTrie<T> banwordTrie;
-    private PayloadTrie<U> allowWordTrie;
-    private Class<T> banwordClass;
-    private Class<U> allowwordClass;
-    private final BanwordLoader loader;
-    private final BanwordConfigElement config;
+    private PayloadTrie<Banword> banwordTrie;
+    private PayloadTrie<Allowword> allowwordTrie;
 
-    @Autowired
-    public BanwordValidator(@Autowired(required = false) BanwordConfigElement config, BanwordLoader loader) throws Exception {
-        this.loader = loader;
-        this.config = config;
-
-        initTries();
+    public BanwordValidator(BanwordProvider banwordProvider, AllowwordProvider allowwordProvider) {
+        this.banwordTrie = TrieBuilder.buildTrie(banwordProvider.provideBanword(), Banword::getWord);
+        this.allowwordTrie = TrieBuilder.buildTrie(allowwordProvider.provideAllowwords(), Allowword::getWord);
     }
 
-    private void initTries() throws Exception {
-        if (config != null) {
-            this.banwordClass = (Class<T>) config.getBanwordClass();
-            this.allowwordClass = (Class<U>) config.getAllowwordClass();
-            String banwordLocation = config.getBanwordLocation();
-            String allowwordLocation = config.getAllowwordLocation();
-
-            if (banwordLocation != null) {
-                List<T> banwords = loader.loadBanword(banwordLocation).stream()
-                        .map(word -> TrieBuilder.instantiateFromKeyword(banwordClass, word))
-                        .collect(Collectors.toList());
-                this.banwordTrie = TrieBuilder.buildTrie(banwords);
-            }
-
-            if (allowwordLocation != null) {
-                List<U> allowWords = loader.loadBanword(allowwordLocation).stream()
-                        .map(word -> TrieBuilder.instantiateFromKeyword(allowwordClass, word))
-                        .collect(Collectors.toList());
-                this.allowWordTrie = TrieBuilder.buildTrie(allowWords);
-            }
-        }
-    }
-
-    public void addBanword(List<T> words) {
-        this.banwordTrie = TrieBuilder.buildBanwordTrie(words, banwordClass);
-    }
-
-    // 금칙어 리스트를 추가하는 메서드
-    public void addBanword(List<T> words, Class<T> clazz) {
-        this.banwordTrie = TrieBuilder.buildBanwordTrie(words, clazz);
-    }
-
-    public void addAllowWord(List<U> words) {
-        this.allowWordTrie = TrieBuilder.buildAllowWordTrie(words, allowwordClass);
-    }
-
-    public void addAllowWord(List<U> words, Class<U> clazz) {
-        this.allowWordTrie = TrieBuilder.buildAllowWordTrie(words, clazz);
+    protected synchronized void rebuildTries(List<Banword> newBanwords, List<Allowword> newAllowwords) {
+        this.banwordTrie = TrieBuilder.buildTrie(newBanwords, Banword::getWord);
+        this.allowwordTrie = TrieBuilder.buildTrie(newAllowwords, Allowword::getWord);
+        // todo: 관리자에서 금칙어, 허용단어가 추가되었을 경우 고려하여 추가 구현 필요
     }
 
     // 검증 로직
-    public BanwordValidationResult validate(String originSentence) {
+    public BanwordValidationResult validate(String originSentence, Set<BanwordFilterPolicy> policies) {
         // Step 1: 우회 문자 분리
-        FilteredResult filteredResult = new BypassCharacterFilter().filterBypassCharacters(originSentence);
+        FilteredResult filteredResult = new BypassCharacterFilter().filterBypassCharacters(originSentence, policies);
 
         // Step 2: 금칙어 탐색
-        Collection<PayloadEmit<T>> foundKeywords = banwordTrie.parseText(filteredResult.getFilteredSentence());
+        Collection<PayloadEmit<Banword>> foundKeywords = banwordTrie.parseText(filteredResult.getFilteredSentence());
 
         // Step 3: 허용 단어 탐색
-        Collection<PayloadEmit<U>> detectedAllowWords = allowWordTrie.parseText(filteredResult.getFilteredSentence());
+        Collection<PayloadEmit<Allowword>> detectedAllowWords = allowwordTrie.parseText(filteredResult.getFilteredSentence());
 
         // Step 4: 허용 단어에 포함되는 금칙어 제외
         List<BanwordDetection> detectedBanwords = new ArrayList<>();
-        for (PayloadEmit<T> foundKeyword : foundKeywords) {
+        for (PayloadEmit<Banword> foundKeyword : foundKeywords) {
             int filteredStart = foundKeyword.getStart();
             int filteredEnd = foundKeyword.getEnd();
 
@@ -97,7 +58,7 @@ public class BanwordValidator<T, U> {
             int originalEnd = filteredResult.mapToOriginalPosition(filteredEnd);
 
             boolean isOverlapping = false;
-            for (PayloadEmit<U> allowWord : detectedAllowWords) {
+            for (PayloadEmit<Allowword> allowWord : detectedAllowWords) {
                 // 금칙어와 허용 단어의 위치가 겹치는지 확인
                 // 금칙어가 허용 단어의 범위 내에 포함되는 경우
                 if (allowWord.getStart() <= filteredStart && filteredEnd <= allowWord.getEnd()) {
